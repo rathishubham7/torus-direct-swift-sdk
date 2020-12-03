@@ -26,27 +26,26 @@ open class TorusSwiftDirectSDK{
     var authorizeURLHandler: URLOpenerTypes?
     var observer: NSObjectProtocol? // useful for Notifications
         
-    public init(aggregateVerifierType: verifierTypes, aggregateVerifierName: String, subVerifierDetails: [SubVerifierDetails], loglevel: BestLogger.Level = .none){
+    public init(aggregateVerifierType: verifierTypes, aggregateVerifierName: String, subVerifierDetails: [SubVerifierDetails], network: EthereumNetwork = .ROPSTEN, loglevel: BestLogger.Level = .none){
         // loggers
         self.torusUtils = TorusUtils(label: "TorusUtils", loglevel: loglevel)
         self.logger = BestLogger(label: "TorusLogger", level: loglevel)
         
         // FetchNodedetails - Initialised with ropsten proxyaddress
         // for mainnet - 0x638646503746d5456209e33a2ff5e3226d698bea
-        self.fnd = FetchNodeDetails(proxyAddress: "0x4023d2a0D330bF11426B12C6144Cfb96B7fa6183", network: EthereumNetwork.ROPSTEN, logLevel: .error)
+        self.fnd = FetchNodeDetails(proxyAddress: (network == .MAINNET ? "0x638646503746d5456209e33a2ff5e3226d698bea" : "0x4023d2a0D330bF11426B12C6144Cfb96B7fa6183"), network: network, logLevel: loglevel)
         
         // verifier details
         self.aggregateVerifierName = aggregateVerifierName
         self.aggregateVerifierType = aggregateVerifierType
         self.subVerifierDetails = subVerifierDetails
     }
-    
+
     public func getEndpoints() -> Promise<Bool>{
         let (tempPromise, seal) = Promise<Bool>.pending()
         if(self.endpoints.isEmpty ||  self.torusNodePubKeys.isEmpty){
             do{
-                try self.fnd.getNodeDetailsPromise().done{ NodeDetails  in
-                    
+                let _ = try self.fnd.getNodeDetailsPromise().done{ NodeDetails  in
                     // Reinit for the 1st login or if data is missing
                     self.torusNodePubKeys = NodeDetails.getTorusNodePub()
                     self.endpoints = NodeDetails.getTorusNodeEndpoints()
@@ -81,7 +80,6 @@ open class TorusSwiftDirectSDK{
             return Promise(error: TSDSError.methodUnavailable)
         }
     }
-    
     public func handleSingleLogins(controller: UIViewController?) -> Promise<[String:Any]>{
         let (tempPromise, seal) = Promise<[String:Any]>.pending()
         if let subVerifier = self.subVerifierDetails.first{
@@ -126,7 +124,7 @@ open class TorusSwiftDirectSDK{
         return tempPromise
     }
     
-    func handleSingleIdVerifier(controller: UIViewController?) -> Promise<[String:Any]>{
+    public func handleSingleIdVerifier(controller: UIViewController?) -> Promise<[String:Any]>{
         let (tempPromise, seal) = Promise<[String:Any]>.pending()
         if let subVerifier = self.subVerifierDetails.first{
             let loginURL = subVerifier.getLoginURL()
@@ -146,6 +144,7 @@ open class TorusSwiftDirectSDK{
                     data.removeValue(forKey: "tokenForKeys")
                     data.removeValue(forKey: "verifierId")
 
+                    print("\(idToken)")
                     let extraParams = ["verifieridentifier": self.aggregateVerifierName, "verifier_id":verifierId, "sub_verifier_ids":[subVerifier.subVerifierId], "verify_params": [["verifier_id": verifierId, "idtoken": idToken]]] as [String : Any]
                     let buffer: Data = try! NSKeyedArchiver.archivedData(withRootObject: extraParams, requiringSecureCoding: false)
                     let hashedOnce = idToken.sha3(.keccak256)
@@ -164,6 +163,27 @@ open class TorusSwiftDirectSDK{
                 }
             }
             openURL(url: loginURL, view: controller)
+        }
+        return tempPromise
+    }
+    public func handleSingleIdVerifier(verifierId: String, idToken: String) -> Promise<[String:Any]>{
+        let (tempPromise, seal) = Promise<[String:Any]>.pending()
+        if let subVerifier = self.subVerifierDetails.first{
+            let data: [String:Any] = [:]
+            let extraParams = ["verifieridentifier": self.aggregateVerifierName, "verifier_id":verifierId, "sub_verifier_ids":[subVerifier.subVerifierId], "verify_params": [["verifier_id": verifierId, "idtoken": idToken]]] as [String : Any]
+            let buffer: Data = try! NSKeyedArchiver.archivedData(withRootObject: extraParams, requiringSecureCoding: false)
+            let hashedOnce = idToken.sha3(.keccak256)
+            
+            self.getEndpoints().then { boolean in
+                return self.torusUtils.retrieveShares(endpoints: self.endpoints, verifierIdentifier: self.aggregateVerifierName, verifierId: verifierId, idToken: hashedOnce, extraParams: buffer).map{ ($0, data)}
+            }.done { privateKey, newData in
+                var data = newData
+                data["privateKey"] = privateKey
+                seal.fulfill(data)
+            }.catch{err in
+                print("err in ", err)
+                seal.reject(err)
+            }
         }
         return tempPromise
     }
