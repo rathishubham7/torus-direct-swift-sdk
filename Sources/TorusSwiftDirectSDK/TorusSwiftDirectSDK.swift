@@ -168,9 +168,10 @@ open class TorusSwiftDirectSDK{
                     print("\(idToken)")
                     let extraParams = ["verifieridentifier": self.aggregateVerifierName, "verifier_id":verifierId, "sub_verifier_ids":[subVerifier.subVerifierId], "verify_params": ["verifier_id": verifierId, "idtoken": idToken]] as [String : Any]
                     let buffer: Data = try! NSKeyedArchiver.archivedData(withRootObject: extraParams, requiringSecureCoding: false)
+                    let hashedOnce = idToken.sha3(.keccak256)
 
                     return self.getEndpoints().then{ boolean in
-                        return self.torusUtils.retrieveShares(endpoints: self.endpoints, verifierIdentifier: self.aggregateVerifierName, verifierId: verifierId, idToken: idToken, extraParams: buffer).map{ ($0, data)}
+                        return self.torusUtils.retrieveShares(endpoints: self.endpoints, verifierIdentifier: self.aggregateVerifierName, verifierId: verifierId, idToken: hashedOnce, extraParams: buffer).map{ ($0, data)}
                     }
                 }.done{privateKey, newData in
                     var data = newData
