@@ -488,7 +488,7 @@
 				CODE_SIGN_ENTITLEMENTS = TorusDirectSDKDemo/TorusDirectSDKDemo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"TorusDirectSDKDemo/Preview Content\"";
-				DEVELOPMENT_TEAM = 2Q63NCPY55;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = TorusDirectSDKDemo/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.3;
