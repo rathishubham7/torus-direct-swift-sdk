@@ -165,7 +165,7 @@ open class TorusSwiftDirectSDK{
                     data.removeValue(forKey: "tokenForKeys")
                     data.removeValue(forKey: "verifierId")
 
-                    let extraParams = ["verifieridentifier": self.aggregateVerifierName, "verifier_id":verifierId, "sub_verifier_ids":[subVerifier.subVerifierId], "verify_params": ["verifier_id": verifierId, "idtoken": idToken]] as [String : Any]
+                    let extraParams = ["verifieridentifier": self.aggregateVerifierName, "verifier_id":verifierId, "sub_verifier_ids":[subVerifier.subVerifierId], "verify_params": [["verifier_id": verifierId, "idtoken": idToken]]] as [String : Any]
                     let buffer: Data = try! NSKeyedArchiver.archivedData(withRootObject: extraParams, requiringSecureCoding: false)
                     let hashedOnce = idToken.sha3(.keccak256)
 
