@@ -53,7 +53,7 @@ struct ContentView: View {
                                                      clientId: "466058994140-6fkq55j9gmh2rh8sigvgmnfomqn9n3v7.apps.googleusercontent.com",
                                                      verifierName: "google-ios",
                                                      redirectURL: "com.googleusercontent.apps.466058994140-6fkq55j9gmh2rh8sigvgmnfomqn9n3v7:/oauthredirect")
-                        let tdsdk = TorusSwiftDirectSDK(aggregateVerifierType: .singleIdVerifier, aggregateVerifierName: "multigoogle-torus", subVerifierDetails: [sub])
+                        let tdsdk = TorusSwiftDirectSDK(aggregateVerifierType: .singleLogin, aggregateVerifierName: "multigoogle-torus", subVerifierDetails: [sub])
                         tdsdk.triggerLogin(browserType: .external).done{ data in
                             print("private key rebuild", data)
                         }.catch{ err in
